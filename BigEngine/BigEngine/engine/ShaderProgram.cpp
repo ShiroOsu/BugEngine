@@ -34,6 +34,7 @@ void Big::ShaderProgram::Use()
 
 bool Big::ShaderProgram::LoadShader(const std::string& uri, ShaderType shaderType)
 {
+	bool success = true;
 	std::string source;
 	GLint shaderHandle = 0;
 
@@ -54,28 +55,31 @@ bool Big::ShaderProgram::LoadShader(const std::string& uri, ShaderType shaderTyp
 		const GLchar* glSource = source.c_str();
 		glShaderSource(shaderHandle, 1, &glSource, nullptr);
 		glCompileShader(shaderHandle);
-		if (!CheckShaderError(handle))
+		success &= CheckShaderError(handle);
+		if (success)
 		{
 			glAttachShader(handle, shaderHandle);
 			glLinkProgram(handle);
-			return !CheckProgramError();
+
+			success &= CheckProgramError();
+
 		}
 	}
 
-
-	return false;
+	glDeleteShader(shaderHandle);
+	return success;
 }
 
 bool Big::ShaderProgram::CheckShaderError(unsigned int shader)
 {
 	GLint status;
-	glGetShaderiv(handle, GL_COMPILE_STATUS, &status);
+	glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
 	if (!status)
 	{
 		GLint messageLength;
-		glGetShaderiv(handle, GL_INFO_LOG_LENGTH, &messageLength);
+		glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &messageLength);
 		std::string errorMessage(messageLength, ' ');
-		glGetShaderInfoLog(handle, messageLength, &messageLength, &errorMessage[0]);
+		glGetShaderInfoLog(shader, messageLength, &messageLength, &errorMessage[0]);
 		LogHandler::DoLog("Shader program failed to link shader: " + errorMessage,
 			LogFile::LogType::Error);
 		return false;
